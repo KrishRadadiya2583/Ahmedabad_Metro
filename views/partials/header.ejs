@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title><%= title %> | <%= appName %></title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container nav">
+        <a class="brand" href="/"><span class="metro-mark">M</span><%= appName %></a>
+        <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-navigation" aria-label="Open navigation menu">
+          <span></span><span></span><span></span>
+        </button>
+        <nav id="primary-navigation">
+          <% if (currentUser) { %>
+            <a href="/fare">Journey</a>
+            <a href="/route">Route Map</a>
+            <a href="/nearest-station">Nearest Station</a>
+            <a href="/news">News</a>
+            <a href="/timetable">Timetable</a>
+            <a href="/tickets">My Tickets</a>
+            <a class="profile-chip" href="/profile"><span><%= currentUser.name.charAt(0).toUpperCase() %></span><%= currentUser.name %></a>
+          <% } else { %>
+            <a href="/#login">Login</a>
+            <a href="/#register">Register</a>
+          <% } %>
+          <% if (isAdmin) { %>
+            <a href="/admin/dashboard">Admin</a>
+          <% } else if (!currentUser) { %>
+            <a href="/admin">Admin Portal</a>
+          <% } %>
+        </nav>
+      </div>
+    </header>
+    <main class="container">

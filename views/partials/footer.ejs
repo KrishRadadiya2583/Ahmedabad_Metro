@@ -1,0 +1,33 @@
+    </main>
+    <footer class="footer">
+      <div class="container footer-grid">
+        <section class="footer-brand">
+          <a class="footer-logo" href="/"><span class="metro-mark">M</span><strong><%= appName %></strong></a>
+          <p>Plan metro journeys, calculate fares, book secure QR tickets, and keep every trip in one convenient account.</p>
+        </section>
+        <nav class="footer-links" aria-label="Metro services">
+          <strong>Services</strong>
+          <a href="/fare">Plan a journey</a>
+          <a href="/route">Route map</a>
+          <a href="/timetable">Timetable</a>
+          <a href="/nearest-station">Nearest station</a>
+        </nav>
+        <nav class="footer-links" aria-label="Help and legal">
+          <strong>Help & legal</strong>
+          <a href="/contact">Contact us</a>
+          <a href="/privacy">Privacy policy</a>
+          <a href="/tickets">My tickets</a>
+        </nav>
+        <section class="footer-contact">
+          <strong>Passenger support</strong>
+          <p>Questions about your digital ticket or journey?</p>
+          <a href="mailto:<%= supportEmail %>"><%= supportEmail %></a>
+        </section>
+      </div>
+      <div class="container footer-bottom">
+        <p>© <%= new Date().getFullYear() %> <%= appName %>. All rights reserved.</p>
+        <p>Designed for safer, simpler metro travel.</p>
+      </div>
+    </footer>
+  </body>
+</html>

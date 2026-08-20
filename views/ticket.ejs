@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+<section class="ticket-box <%= expired ? 'ticket-expired' : '' %>">
+  <div class="badge"><%= expired ? 'Expired' : 'Active ticket' %></div>
+  <h1>Ahmedabad Metro Ticket</h1><p class="ticket-id">#<%= ticket._id.toString().slice(-8).toUpperCase() %></p>
+  <% if (!expired) { %><div class="qr-wrap"><img src="<%= qrCode %>" alt="Ticket QR code"><small>Scan at the entry gate</small></div><% } %>
+  <p><strong>From:</strong> <%= ticket.startStation %></p><p><strong>To:</strong> <%= ticket.endStation %></p>
+  <p><strong>Distance:</strong> <%= ticket.distance.toFixed(2) %> km</p><p><strong>Paid:</strong> ₹<%= ticket.totalPrice %></p>
+  <p><strong>Purchased:</strong> <%= new Date(ticket.paidAt).toLocaleString('en-IN') %></p><p><strong>Valid until:</strong> <%= new Date(ticket.expiresAt).toLocaleString('en-IN') %></p>
+  <p><strong>Payment ID:</strong> <%= ticket.razorpayPaymentId %></p>
+  <div class="ticket-route"><h3>Route instructions</h3><% if (routeDetails.interchanges.length) { %><p class="change-required">Train change required</p><% routeDetails.interchanges.forEach(change => { %><div class="change-step"><span>Change at</span><strong><%= change.station.replace(/_/g, ' ') %></strong><small><%= change.fromLine %> → <%= change.toLine %></small></div><% }) %><% } else { %><p class="direct-alert">Direct train — no interchange required.</p><% } %><details><summary>View all <%= routeDetails.journey.length %> stations</summary><ol><% routeDetails.journey.forEach(station => { %><li><%= station.replace(/_/g, ' ') %></li><% }) %></ol></details></div>
+  <% if (expired) { %><div class="alert error">This ticket has expired and cannot be used for travel.</div><% } %>
+  <p class="ticket-note">Valid only from the selected origin. Keep this page open until your journey is complete.</p>
+  <div class="ticket-actions"><a class="plain-btn" href="/tickets/<%= ticket._id %>/download" download>Download ticket</a><button class="plain-btn" type="button" data-share-ticket data-download-url="/tickets/<%= ticket._id %>/download" data-ticket-code="<%= ticket._id.toString().slice(-8).toUpperCase() %>">Share ticket</button><a class="plain-btn" href="/tickets">My Tickets</a></div>
+  <p class="ticket-share-message" data-share-message aria-live="polite"></p>
+</section><%- include('partials/footer') %>

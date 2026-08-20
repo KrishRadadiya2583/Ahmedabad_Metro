@@ -1,0 +1,9 @@
+<%- include('partials/header') %>
+<section class="legal-hero contact-hero"><span class="eyebrow">Passenger care</span><h1>How can we help?</h1><p>Get help with digital tickets, payments, account access, fare calculation, or route planning.</p></section>
+<section class="contact-grid">
+  <article class="contact-card"><span>01</span><h2>Ticket support</h2><p>Include your ticket ID and payment reference so the support team can locate your booking.</p><a href="mailto:<%= supportEmail %>?subject=Metro ticket support">Email ticket support →</a></article>
+  <article class="contact-card"><span>02</span><h2>Account support</h2><p>For login or profile issues, contact us from the email address registered to your account.</p><a href="mailto:<%= supportEmail %>?subject=Metro account support">Get account help →</a></article>
+  <article class="contact-card"><span>03</span><h2>Journey information</h2><p>Check the current route map and timetable before contacting support about service planning.</p><a href="/timetable">View timetable →</a></article>
+</section>
+<section class="contact-banner"><div><span class="eyebrow">Direct contact</span><h2>Passenger support email</h2><p>We aim to respond as soon as possible during normal support hours.</p></div><a href="mailto:<%= supportEmail %>"><%= supportEmail %></a></section>
+<%- include('partials/footer') %>

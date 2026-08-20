@@ -1,0 +1,49 @@
+<%- include('partials/header') %>
+<section class="auth-landing" data-auth-mode="<%= authMode %>">
+  <div class="landing-copy">
+    <img class="hero-photo" src="<%= assetUrl('metro-sabarmati.jpg') %>" alt="Ahmedabad Metro crossing the Sabarmati river">
+    <div class="photo-shade"></div>
+    <div class="hero-content">
+      <div class="city-label">Ahmedabad Metro</div>
+      <h1>Travel across<br><em>Ahmedabad & Gandhinagar.</em></h1>
+      <p>Plan your route and keep digital tickets in one account.</p>
+    </div>
+    <small class="photo-credit">Project image: Gujarat Metro Rail Corporation</small>
+  </div>
+  <div class="auth-panel">
+    <div class="auth-panel-head"><span class="metro-mark large">M</span><div><strong>Welcome</strong><small>Login or create an account</small></div></div>
+    <div class="auth-tabs" role="tablist"><button type="button" role="tab" data-auth-tab="login">Login</button><button type="button" role="tab" data-auth-tab="register">Register</button></div>
+    <% if (authError) { %><div class="alert error"><%= authError %></div><% } %>
+    <form class="auth-form" data-auth-form="login" method="POST" action="/login">
+      <div class="form-heading"><h2>Welcome back</h2><p>Enter your details to continue.</p></div>
+      <label for="login-email">Email address</label><input id="login-email" type="email" name="email" value="<%= authMode === 'login' ? (values.email || '') : '' %>" placeholder="you@example.com" required autocomplete="email">
+      <label for="login-password">Password</label><input id="login-password" type="password" name="password" placeholder="Your password" required autocomplete="current-password">
+      <button type="submit">Login to your account <span>→</span></button>
+      <p class="form-switch">New to Metro? <button type="button" data-auth-link="register">Create an account</button></p>
+    </form>
+    <form class="auth-form" data-auth-form="register" method="POST" action="/register">
+      <div class="form-heading"><h2>Create account</h2><p>Register once to manage all your tickets.</p></div>
+      <label for="register-name">Full name</label><input id="register-name" name="name" value="<%= authMode === 'register' ? (values.name || '') : '' %>" placeholder="Your full name" required maxlength="80" autocomplete="name">
+      <label for="register-email">Email address</label><input id="register-email" type="email" name="email" value="<%= authMode === 'register' ? (values.email || '') : '' %>" placeholder="you@example.com" required autocomplete="email">
+      <label for="register-password">Password</label><input id="register-password" type="password" name="password" minlength="8" placeholder="Minimum 8 characters" required autocomplete="new-password">
+      <button type="submit">Create your account <span>→</span></button>
+      <p class="form-switch">Already registered? <button type="button" data-auth-link="login">Login instead</button></p>
+    </form>
+    <a class="staff-link" href="/admin">Metro staff? Open Admin Portal →</a>
+  </div>
+</section>
+<%- include('partials/network-map', { compact: true }) %>
+<%- include('partials/official-route-maps', { compact: true }) %>
+<section class="project-overview">
+  <div class="section-intro"><span class="eyebrow">The network</span><h2>Connecting Ahmedabad, Gandhinagar and GIFT City</h2><p>Ahmedabad Metro is developed by Gujarat Metro Rail Corporation as a modern, accessible rapid-transit network for the region.</p></div>
+  <div class="project-grid">
+    <article class="project-card phase-one"><span>Phase 1</span><h3>Ahmedabad city network</h3><p>East–West and North–South corridors connect major residential, education, railway and commercial destinations.</p><div class="project-numbers"><strong>40.03 km</strong><small>31 operational stations</small></div></article>
+    <article class="project-card phase-two"><span>Phase 2</span><h3>Ahmedabad to Gandhinagar</h3><p>The Motera–Mahatma Mandir corridor and GNLU–GIFT City branch extend metro travel across the twin cities.</p><div class="project-numbers"><strong>28.25 km</strong><small>22 operational stations</small></div></article>
+    <article class="project-image-card"><img src="<%= assetUrl('metro-narmada.png') %>" alt="Ahmedabad Metro crossing the Narmada Canal bridge"><div><span>Engineering the network</span><h3>Metro infrastructure across Gujarat</h3><p>Elevated corridors and landmark river and canal bridges connect Ahmedabad with Gandhinagar and GIFT City.</p></div></article>
+  </div>
+  <div class="network-facts"><div><strong>68.28 km</strong><span>Operational Phase 1 + 2 network</span></div><div><strong>53</strong><span>Operational stations</span></div><div><strong>4</strong><span>Connected corridors and branches</span></div></div>
+  <div class="brand-gallery"><figure><img src="<%= assetUrl('metro-sabarmati.jpg') %>" alt="Metro viaduct over the Sabarmati"><figcaption><span>Sabarmati Bridge</span><strong>A 960-metre connection across the river</strong></figcaption></figure><figure><img src="<%= assetUrl('metro-narmada.png') %>" alt="Metro crossing the Narmada Canal"><figcaption><span>Narmada Canal</span><strong>Landmark extradosed bridge engineering</strong></figcaption></figure><figure><img src="<%= assetUrl('metro-hero.jpg') %>" alt="Modern metro train at an Indian station"><figcaption><span>Modern mobility</span><strong>Accessible stations and electric trains</strong></figcaption></figure></div>
+  <p class="image-source">Project photography sourced from the official GMRC special-features gallery.</p>
+</section>
+<section class="metro-explainer"><div class="section-intro"><span class="eyebrow">Passenger journey</span><h2>How Ahmedabad Metro works</h2><p>A simple entry-to-exit system connects four corridors through planned interchange stations.</p></div><div class="how-grid"><article><span>01</span><h3>Plan the route</h3><p>Choose origin and destination. The planner calculates stops, fare and required interchanges.</p></article><article><span>02</span><h3>Buy a QR ticket</h3><p>Complete payment and keep the original digital QR ticket available on your phone.</p></article><article><span>03</span><h3>Scan to enter</h3><p>Use the QR ticket at the selected origin station and follow platform signs for your line.</p></article><article><span>04</span><h3>Change and exit</h3><p>Change lines where instructed, then scan the same ticket at your destination exit gate.</p></article></div><div class="operation-banner"><img src="<%= assetUrl('metro-hero.jpg') %>" alt="Metro train at station"><div><span class="eyebrow">Service information</span><h3>Check timings before you leave</h3><p>Frequency varies by corridor and time of day. Phase 2 and GIFT City services operate to a published timetable.</p><a href="/login">Login to view timetable →</a></div></div></section>
+<%- include('partials/footer') %>

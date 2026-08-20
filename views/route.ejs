@@ -1,0 +1,51 @@
+<%- include('partials/header') %>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+
+<section class="hero">
+  <h1>Metro Network</h1>
+  <p>Phase 1 and Phase 2 stations across Ahmedabad, Gandhinagar and GIFT City.</p>
+</section>
+
+<%- include('partials/network-map', { compact: false }) %>
+<%- include('partials/official-route-maps', { compact: false }) %>
+
+<section class="actual-route-panel" aria-labelledby="actual-route-title">
+  <div class="network-map-heading">
+    <div><span class="eyebrow">Geographic route</span><h2 id="actual-route-title">Actual metro alignment</h2><p>Explore mapped tracks and station locations over real streets. Zoom, drag or select a station marker for details.</p></div>
+    <button id="fit-actual-route" type="button">Show entire network</button>
+  </div>
+  <div id="actual-route-map" aria-label="Interactive geographic map of Ahmedabad Metro"><div class="actual-map-loading">Loading actual track data…</div></div>
+  <div class="actual-map-note"><span id="actual-map-status">Connecting to OpenStreetMap…</span><small>Track geometry and station positions: OpenStreetMap contributors. Geographic data may reflect mapping updates.</small></div>
+</section>
+
+<section class="route-information">
+  <div class="section-intro"><span class="eyebrow">Network details</span><h2>Lines, distances and connections</h2><p>Distances are calculated along the station sequence. Use the station lists below for every stop on each corridor.</p></div>
+  <div class="route-summary-grid">
+    <% lineDetails.forEach(line => { %>
+      <article class="route-summary line-<%= line.color %>"><span><%= line.phase %></span><h3><%= line.name %></h3><p><%= line.from %> → <%= line.to %></p><div><strong><%= line.distance.toFixed(2) %> km</strong><small><%= line.stationCount %> stations</small></div></article>
+    <% }) %>
+  </div>
+  <div class="interchange-guide">
+    <article><strong>Old High Court</strong><span>Change between East–West and North–South services.</span></article>
+    <article><strong>Motera Stadium</strong><span>Continue between Ahmedabad and the Gandhinagar Phase 2 corridor.</span></article>
+    <article><strong>GNLU</strong><span>Change for PDEU and GIFT City branch services.</span></article>
+  </div>
+</section>
+
+<section class="route-grid">
+  <% routeLines.forEach((line, lineIndex) => { %>
+    <div class="route-card line-<%= line.color %>">
+      <h3><%= line.name %></h3>
+      <span class="line-phase"><%= line.phase %></span>
+      <ul>
+        <% line.stations.forEach((station, stationIndex) => { %>
+          <li><span><%= station.replace(/_/g, ' ') %></span><% if (stationIndex < line.stations.length - 1) { %><small><%= lineDetails[lineIndex].segments[stationIndex].toFixed(2) %> km to next station</small><% } %></li>
+        <% }) %>
+      </ul>
+    </div>
+  <% }) %>
+</section>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="/actual-route-map.js"></script>
+<%- include('partials/footer') %>

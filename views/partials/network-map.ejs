@@ -1,0 +1,51 @@
+<section class="network-map-panel <%= compact ? 'network-map-compact' : 'network-map-detailed' %>" aria-labelledby="<%= compact ? 'landing-map-title' : 'route-map-title' %>">
+  <div class="network-map-heading">
+    <div><span class="eyebrow">Schematic network map</span><h2 id="<%= compact ? 'landing-map-title' : 'route-map-title' %>">Ahmedabad Metro at a glance</h2><p>Follow the coloured corridors and change at Old High Court, Motera Stadium or GNLU.</p></div>
+    <% if (compact) { %><a href="/login">Sign in to explore routes →</a><% } else { %><a href="/fare">Plan a journey →</a><% } %>
+  </div>
+  <div class="network-map-scroll" role="img" aria-label="Schematic Ahmedabad Metro map showing the East-West, North-South, Phase 2 and GIFT City lines">
+    <svg class="network-map-svg" viewBox="0 0 1120 650" xmlns="http://www.w3.org/2000/svg">
+      <g class="map-grid"><path d="M0 130H1120M0 260H1120M0 390H1120M0 520H1120"/><path d="M224 0V650M448 0V650M672 0V650M896 0V650"/></g>
+      <path class="metro-track blue" d="M80 390H930"/>
+      <path class="metro-track red" d="M500 585V390V295"/>
+      <path class="metro-track violet" d="M500 295C500 220 555 175 630 145S765 85 880 70"/>
+      <path class="metro-track green" d="M630 145L790 250L955 215"/>
+
+      <g class="map-stations blue-stations">
+        <circle cx="80" cy="390" r="8"/><circle cx="185" cy="390" r="6"/><circle cx="290" cy="390" r="6"/><circle cx="395" cy="390" r="6"/><circle cx="500" cy="390" r="11"/><circle cx="610" cy="390" r="6"/><circle cx="715" cy="390" r="6"/><circle cx="820" cy="390" r="6"/><circle cx="930" cy="390" r="8"/>
+      </g>
+      <g class="map-stations red-stations">
+        <circle cx="500" cy="585" r="8"/><circle cx="500" cy="520" r="6"/><circle cx="500" cy="455" r="6"/><circle cx="500" cy="295" r="11"/>
+      </g>
+      <g class="map-stations violet-stations">
+        <circle cx="555" cy="205" r="6"/><circle cx="630" cy="145" r="11"/><circle cx="710" cy="112" r="6"/><circle cx="795" cy="85" r="6"/><circle cx="880" cy="70" r="8"/>
+      </g>
+      <g class="map-stations green-stations"><circle cx="790" cy="250" r="6"/><circle cx="955" cy="215" r="8"/></g>
+
+      <g class="map-labels">
+        <text x="80" y="420" text-anchor="middle">Vastral Gam</text><text x="290" y="420" text-anchor="middle">Kalupur</text>
+        <text x="485" y="375" text-anchor="end" class="interchange-label">Old High Court</text><text x="715" y="420" text-anchor="middle">Gujarat University</text><text x="930" y="420" text-anchor="middle">Thaltej Gam</text>
+        <text x="480" y="590" text-anchor="end">APMC</text><text x="480" y="525" text-anchor="end">Paldi</text><text x="480" y="460" text-anchor="end">Vadaj</text>
+        <text x="480" y="285" text-anchor="end" class="interchange-label">Motera Stadium</text><text x="545" y="190" text-anchor="end">Koba Circle</text>
+        <text x="645" y="132" class="interchange-label">GNLU</text><text x="710" y="96" text-anchor="middle">Raysan</text><text x="795" y="68" text-anchor="middle">Sachivalaya</text><text x="880" y="48" text-anchor="middle">Mahatma Mandir</text>
+        <text x="790" y="278" text-anchor="middle">PDEU</text><text x="955" y="245" text-anchor="middle">GIFT City</text>
+      </g>
+    </svg>
+  </div>
+  <div class="map-legend"><span><i class="blue"></i>East–West</span><span><i class="red"></i>North–South</span><span><i class="violet"></i>Motera–Mahatma Mandir</span><span><i class="green"></i>GIFT branch</span><small>Large rings indicate interchange stations · Map is schematic, not geographical</small></div>
+  <div class="complete-network-map">
+    <div class="complete-map-title"><span>Complete station map</span><strong>All <%= new Set(routeLines.flatMap(line => line.stations)).size %> stations</strong><small>Scroll each corridor sideways to view every stop.</small></div>
+    <% routeLines.forEach(line => { %>
+      <div class="complete-line-row line-row-<%= line.color %>">
+        <div class="complete-line-name"><i></i><span><strong><%= line.name %></strong><small><%= line.stations.length %> stations</small></span></div>
+        <div class="complete-line-scroll">
+          <ol class="complete-line-stations" style="--station-count:<%= line.stations.length %>">
+            <% line.stations.forEach(station => { const interchange = ['OLD_HIGHCOURT', 'MOTERA_STADIUM', 'GNLU'].includes(station); %>
+              <li class="<%= interchange ? 'complete-interchange' : '' %>"><span class="station-dot"></span><strong><%= station.replace(/_/g, ' ') %></strong><% if (interchange) { %><small>Interchange</small><% } %></li>
+            <% }) %>
+          </ol>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>

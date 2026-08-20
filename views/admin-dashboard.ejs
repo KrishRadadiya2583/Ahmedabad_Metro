@@ -1,0 +1,33 @@
+<%- include('partials/header') %>
+
+<section class="hero compact">
+  <h1>Admin Dashboard</h1>
+  <p>Metro operations overview</p>
+  <div class="dashboard-actions">
+    <a class="plain-btn" href="/admin/history">View Booking History</a>
+    <form class="inline-form" action="/admin/logout" method="POST"><button class="plain-btn secondary" type="submit">Logout</button></form>
+  </div>
+</section>
+
+<section class="stats-grid">
+  <div class="card stat-card">
+    <span>Total Bookings</span>
+    <strong><%= totalBookings %></strong>
+  </div>
+  <div class="card stat-card">
+    <span>Total Revenue</span>
+    <strong>₹<%= totalRevenue %></strong>
+  </div>
+</section>
+
+<section class="card">
+  <h3>Recent Bookings</h3>
+  <% if (bookings && bookings.length) { %>
+    <table class="data-table">
+      <thead><tr><th>From</th><th>User</th><th>To</th><th>Amount</th><th>Payment</th><th>Time</th></tr></thead>
+      <tbody><% bookings.forEach(booking => { %><tr><td><%= booking.startStation %></td><td><%= booking.user ? booking.user.email : 'Unknown' %></td><td><%= booking.endStation %></td><td>₹<%= booking.totalPrice %></td><td><%= booking.paymentMethod %></td><td><%= new Date(booking.createdAt).toLocaleString() %></td></tr><% }) %></tbody>
+    </table>
+  <% } else { %><p>No bookings yet.</p><% } %>
+</section>
+
+<%- include('partials/footer') %>

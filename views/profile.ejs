@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<section class="profile-hero">
+  <img src="<%= assetUrl('ahmedabad-city.jpg') %>" alt="Modern architecture in Ahmedabad">
+  <div class="profile-hero-shade"></div>
+  <div class="profile-identity"><div class="profile-avatar"><%= user.name.charAt(0).toUpperCase() %></div><div><span>Metro account</span><h1><%= user.name %></h1><p><%= user.email %></p></div></div>
+</section>
+<section class="profile-stats">
+  <div class="profile-stat"><img src="<%= assetUrl('icon-ticket.svg') %>" alt=""><div><strong><%= totalTickets %></strong><span>Total journeys</span></div></div>
+  <div class="profile-stat"><span class="pulse-icon"></span><div><strong><%= activeTickets %></strong><span>Active tickets</span></div></div>
+  <div class="profile-stat"><span class="rupee-icon">₹</span><div><strong>₹<%= totalSpent %></strong><span>Total spent</span></div></div>
+</section>
+<section class="profile-layout">
+  <div class="card profile-form-card"><div class="section-heading"><div><span class="eyebrow">Personal details</span><h2>Profile information</h2></div></div>
+    <% if (success) { %><div class="alert success">Profile updated successfully.</div><% } %><% if (error) { %><div class="alert error"><%= error %></div><% } %>
+    <form action="/profile" method="POST"><label for="profile-name">Full name</label><input id="profile-name" name="name" value="<%= user.name %>" minlength="2" maxlength="80" required><label>Email address</label><input value="<%= user.email %>" disabled><small>Email is used for ticket delivery and cannot be changed here.</small><button type="submit">Save changes</button></form>
+  </div>
+  <aside class="card profile-actions"><span class="eyebrow">Quick actions</span><h2>Ready to travel?</h2><p>Plan a journey or open your latest digital ticket.</p><a class="action-link primary" href="/fare">Plan a journey <span>→</span></a><a class="action-link" href="/tickets">View my tickets <span>→</span></a><a class="action-link" href="/route">Explore metro lines <span>→</span></a></aside>
+</section>
+<form class="profile-logout" action="/logout" method="POST"><button type="submit">Logout from this account</button></form>
+<%- include('partials/footer') %>

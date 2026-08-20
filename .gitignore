@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.vercel
+node_modules
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+coverage/
+*.log
+*.pem
+*.key

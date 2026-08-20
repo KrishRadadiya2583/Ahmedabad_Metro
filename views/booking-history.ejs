@@ -1,0 +1,46 @@
+<%- include('partials/header') %>
+
+<section class="hero compact">
+  <h1>Booking History</h1>
+  <p>Every metro fare request recorded in the system.</p>
+  <div class="dashboard-actions">
+    <a class="plain-btn" href="/admin/dashboard">Back to Dashboard</a>
+  </div>
+</section>
+
+<section class="card">
+  <% if (bookings && bookings.length) { %>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>User</th>
+          <th>From</th>
+          <th>To</th>
+          <th>Distance</th>
+          <th>Paid</th>
+          <th>Payment</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% bookings.forEach(booking => { %>
+          <tr>
+            <td><%= booking._id.toString().slice(-6) %></td>
+            <td><%= booking.user ? booking.user.email : 'Unknown' %></td>
+            <td><%= booking.startStation %></td>
+            <td><%= booking.endStation %></td>
+            <td><%= booking.distance %></td>
+            <td>₹<%= booking.totalPrice %></td>
+            <td><%= booking.paymentMethod %></td>
+            <td><%= new Date(booking.createdAt).toLocaleString() %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } else { %>
+    <p>No past bookings found.</p>
+  <% } %>
+</section>
+
+<%- include('partials/footer') %>

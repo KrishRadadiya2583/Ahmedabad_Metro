@@ -1,0 +1,20 @@
+<%- include('partials/header') %>
+<section class="timetable-hero"><div><span class="eyebrow">Effective 18 May 2026</span><h1>Metro timetable</h1><p>Current official frequency, first and last train, and Ahmedabad–Gandhinagar scheduled services.</p></div><a href="https://www.gujaratmetrorail.com/ahmedabad/train-information/" target="_blank" rel="noopener">Official GMRC page ↗</a></section>
+<section class="service-summary"><article class="blue-service"><span>Blue Line</span><h2>Vastral Gam ↔ Thaltej Gam</h2><div><strong>06:20–23:00</strong><small>Peak: every 7 min · Other times: 10–20 min</small></div></article><article class="red-service"><span>Red / North–South</span><h2>APMC ↔ Koteshwar Road</h2><div><strong>06:16–23:10</strong><small>Every 12 min until 22:00 · then every 20 min</small></div></article><article class="yellow-service"><span>Phase 2</span><h2>Koteshwar Road ↔ Mahatma Mandir</h2><div><strong>06:40–21:20</strong><small>Average frequency varies from 24–40 minutes</small></div></article><article class="purple-service"><span>GIFT Branch</span><h2>GNLU ↔ GIFT City</h2><div><strong>07:36–19:13</strong><small>Selected metro trips; bus service operates in a daytime window</small></div></article></section>
+<section class="schedule-table-card">
+  <div class="section-heading-row"><div><span class="eyebrow">Daily service schedule</span><h2>First train, last train and frequency</h2></div><span>Effective 18 May 2026</span></div>
+  <div class="schedule-table-wrap">
+    <table class="metro-schedule-table">
+      <thead><tr><th>Line</th><th>Direction</th><th>First train</th><th>Last train</th><th>Peak frequency</th><th>Other service</th></tr></thead>
+      <tbody>
+        <% timetable.forEach(service => { %>
+          <tr><td><span class="line-badge <%= service.className %>"><%= service.line %></span></td><td><strong><%= service.route %></strong></td><td><time><%= service.first %></time></td><td><time><%= service.last %></time></td><td><%= service.peak %></td><td><%= service.regular %></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <p class="table-help">Times use the 24-hour clock. Arrive at least 10 minutes before the final service.</p>
+</section>
+<section class="official-schedule"><div class="section-heading-row"><div><span class="eyebrow">Official schedule</span><h2>Frequency and operating hours</h2></div><a href="<%= assetUrl('metro-frequency-2026.jpg') %>" target="_blank">Open full size ↗</a></div><div class="schedule-image"><img src="<%= assetUrl('metro-frequency-2026.jpg') %>" alt="Official Ahmedabad Metro frequency and operating hours effective 18 May 2026"></div></section>
+<section class="official-schedule"><div class="section-heading-row"><div><span class="eyebrow">Ahmedabad–Gandhinagar services</span><h2>Detailed departure timetable</h2></div><a href="<%= assetUrl('metro-timetable-2026.jpeg') %>" target="_blank">Open full size ↗</a></div><div class="schedule-image tall"><img src="<%= assetUrl('metro-timetable-2026.jpeg') %>" alt="Official Ahmedabad Gandhinagar Metro timetable effective 18 May 2026"></div><p class="schedule-note">Timings can change for operational reasons. Check GMRC announcements before travel, especially for special-event services.</p></section>
+<%- include('partials/footer') %>

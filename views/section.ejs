@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+
+<section class="hero">
+  <h1><%= section.title %></h1>
+</section>
+
+<div class="card">
+  <ul class="section-list">
+    <% formattedStations.forEach(station => { %>
+      <li><%= station %></li>
+    <% }) %>
+  </ul>
+</div>
+
+<%- include('partials/footer') %>

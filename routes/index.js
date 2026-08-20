@@ -252,11 +252,45 @@ router.post('/admin/login', loginLimiter, requireAdminGuest, async (req, res, ne
 router.post('/admin/logout', requireAdmin, (req, res) => req.session.destroy(() => { res.clearCookie('metro.sid'); res.redirect(303, '/admin/login'); }));
 router.get('/admin/dashboard', requireAdmin, async (req, res, next) => {
   try {
-    const filter = { status: 'paid' };
-    const bookings = await FareRequest.find(filter).populate('user', 'name email').sort({ paidAt: -1 }).limit(5);
-    const totalBookings = await FareRequest.countDocuments(filter);
-    const totals = await FareRequest.aggregate([{ $match: filter }, { $group: { _id: null, total: { $sum: '$totalPrice' } } }]);
-    res.render('admin-dashboard', { title: 'Admin Dashboard', bookings, totalBookings, totalRevenue: totals[0]?.total || 0 });
+    const allowedPeriods = [7, 30, 90];
+    const period = allowedPeriods.includes(Number(req.query.days)) ? Number(req.query.days) : 30;
+    const now = new Date();
+    const periodStart = new Date(now);
+    periodStart.setHours(0, 0, 0, 0);
+    periodStart.setDate(periodStart.getDate() - period + 1);
+    const paidFilter = { status: 'paid' };
+    const periodPaidFilter = { ...paidFilter, paidAt: { $gte: periodStart } };
+
+    const [bookings, recentUsers, totalUsers, newUsers, totalBookings, activeTickets, paymentStatus, totals, periodTotals, dailyRaw, popularRoutes, paymentMethods] = await Promise.all([
+      FareRequest.find(paidFilter).populate('user', 'name email').sort({ paidAt: -1 }).limit(8).lean(),
+      User.find().sort({ createdAt: -1 }).limit(6).select('name email createdAt').lean(),
+      User.countDocuments(),
+      User.countDocuments({ createdAt: { $gte: periodStart } }),
+      FareRequest.countDocuments(paidFilter),
+      FareRequest.countDocuments({ ...paidFilter, expiresAt: { $gt: now } }),
+      FareRequest.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]),
+      FareRequest.aggregate([{ $match: paidFilter }, { $group: { _id: null, revenue: { $sum: '$totalPrice' }, averageFare: { $avg: '$totalPrice' }, distance: { $sum: '$distance' } } }]),
+      FareRequest.aggregate([{ $match: periodPaidFilter }, { $group: { _id: null, revenue: { $sum: '$totalPrice' }, bookings: { $sum: 1 } } }]),
+      FareRequest.aggregate([{ $match: periodPaidFilter }, { $group: { _id: { $dateToString: { format: '%Y-%m-%d', date: '$paidAt', timezone: '+05:30' } }, bookings: { $sum: 1 }, revenue: { $sum: '$totalPrice' } } }, { $sort: { _id: 1 } }]),
+      FareRequest.aggregate([{ $match: periodPaidFilter }, { $group: { _id: { from: '$startStation', to: '$endStation' }, bookings: { $sum: 1 }, revenue: { $sum: '$totalPrice' } } }, { $sort: { bookings: -1, revenue: -1 } }, { $limit: 5 }]),
+      FareRequest.aggregate([{ $match: periodPaidFilter }, { $group: { _id: '$paymentMethod', count: { $sum: 1 }, revenue: { $sum: '$totalPrice' } } }, { $sort: { count: -1 } }])
+    ]);
+
+    const dailyMap = new Map(dailyRaw.map(day => [day._id, day]));
+    const daily = Array.from({ length: period }, (_, index) => {
+      const date = new Date(periodStart);
+      date.setDate(date.getDate() + index);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+      return { date: key, label: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }), bookings: dailyMap.get(key)?.bookings || 0, revenue: dailyMap.get(key)?.revenue || 0 };
+    });
+    const statusCounts = Object.fromEntries(paymentStatus.map(item => [item._id, item.count]));
+    const allTime = totals[0] || { revenue: 0, averageFare: 0, distance: 0 };
+    const selectedPeriod = periodTotals[0] || { revenue: 0, bookings: 0 };
+
+    res.render('admin-dashboard', {
+      title: 'Admin Dashboard', period, periodStart, now, bookings, recentUsers, totalUsers, newUsers,
+      totalBookings, activeTickets, statusCounts, allTime, selectedPeriod, daily, popularRoutes, paymentMethods
+    });
   } catch (error) { next(error); }
 });
 router.get('/admin/history', requireAdmin, async (req, res, next) => {

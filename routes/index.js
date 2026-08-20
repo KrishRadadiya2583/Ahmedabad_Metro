@@ -28,6 +28,18 @@ const formatStation = value => String(value || '').replace(/_/g, ' ');
 allStations.sort();
 const ticketMinutes = () => Math.max(1, Number(process.env.TICKET_VALID_MINUTES || 180));
 const paymentConfigured = () => Boolean(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+let razorpayClient;
+const getRazorpayClient = () => {
+  if (!razorpayClient) razorpayClient = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
+  return razorpayClient;
+};
+const deliverTicketEmail = (user, ticket) => {
+  setImmediate(async () => {
+    try {
+      if (await sendTicketEmail({ user, ticket })) await FareRequest.updateOne({ _id: ticket._id, emailSentAt: null }, { $set: { emailSentAt: new Date() } });
+    } catch (error) { console.error('Ticket email failed:', error.message); }
+  });
+};
 const renderLanding = (res, options = {}) => res.render('index', {
   title: 'Welcome', authError: null, authMode: 'login', values: {}, routeLines: lines, ...options
 });
@@ -141,11 +153,9 @@ router.post('/api/payment/order', requireUser, async (req, res) => {
     const { startStation, endStation } = req.body;
     const result = calculateFare(startStation, endStation);
     if (!result.valid) return res.status(400).json({ error: result.message });
-    const razorpay = new Razorpay({ key_id: process.env.RAZORPAY_KEY_ID, key_secret: process.env.RAZORPAY_KEY_SECRET });
-    const order = await razorpay.orders.create({ amount: Math.round(result.totalPrice * 100), currency: 'INR', receipt: `metro_${Date.now()}` });
+    const order = await getRazorpayClient().orders.create({ amount: Math.round(result.totalPrice * 100), currency: 'INR', receipt: `metro_${Date.now()}` });
     await FareRequest.create({ user: req.session.userId, startStation: formatStation(startStation), endStation: formatStation(endStation), distance: result.distance, basePrice: result.basePrice, totalPrice: result.totalPrice, discountApplied: result.discountApplied, razorpayOrderId: order.id });
-    const user = await User.findById(req.session.userId).select('name email');
-    res.json({ orderId: order.id, amount: order.amount, currency: order.currency, keyId: process.env.RAZORPAY_KEY_ID, user });
+    res.json({ orderId: order.id, amount: order.amount, currency: order.currency, keyId: process.env.RAZORPAY_KEY_ID, user: { name: req.user.name, email: req.user.email } });
   } catch (error) { console.error('Razorpay order error:', error.message); res.status(500).json({ error: 'Could not start payment. Please try again.' }); }
 });
 
@@ -156,18 +166,15 @@ router.post('/api/payment/verify', requireUser, async (req, res) => {
     const valid = razorpay_signature && expected.length === razorpay_signature.length && crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(razorpay_signature));
     if (!valid) { await FareRequest.updateOne({ razorpayOrderId: razorpay_order_id, user: req.session.userId }, { status: 'failed' }); return res.status(400).json({ error: 'Payment verification failed.' }); }
     const now = new Date();
-    const ticket = await FareRequest.findOneAndUpdate(
+    let ticket = await FareRequest.findOneAndUpdate(
       { razorpayOrderId: razorpay_order_id, user: req.session.userId, status: 'pending' },
       { status: 'paid', razorpayPaymentId: razorpay_payment_id, paidAt: now, expiresAt: new Date(now.getTime() + ticketMinutes() * 60000) }, { new: true }
     );
+    const ticketWasCreated = Boolean(ticket);
+    if (!ticket) ticket = await FareRequest.findOne({ razorpayOrderId: razorpay_order_id, razorpayPaymentId: razorpay_payment_id, user: req.session.userId, status: 'paid' });
     if (!ticket) return res.status(409).json({ error: 'Ticket was already processed or was not found.' });
-    try {
-      if (await sendTicketEmail({ user: req.user, ticket })) {
-        ticket.emailSentAt = new Date();
-        await ticket.save();
-      }
-    } catch (emailError) { console.error('Ticket email failed:', emailError.message); }
     res.json({ success: true, redirectUrl: `/tickets/${ticket._id}` });
+    if (ticketWasCreated) deliverTicketEmail(req.user, ticket);
   } catch (error) { console.error('Payment verification error:', error.message); res.status(500).json({ error: 'Could not verify payment.' }); }
 });
 

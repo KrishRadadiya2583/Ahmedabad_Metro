@@ -144,6 +144,18 @@ const payButton = document.getElementById('pay-button');
 if (payButton) {
   payButton.addEventListener('click', async () => {
     const message = document.getElementById('payment-message');
+    const generationPopup = document.querySelector('[data-ticket-generation]');
+    let paymentCompleted = false;
+    const showGenerationPopup = () => {
+      if (!generationPopup) return;
+      generationPopup.hidden = false;
+      document.body.classList.add('ticket-generation-open');
+    };
+    const hideGenerationPopup = () => {
+      if (!generationPopup) return;
+      generationPopup.hidden = true;
+      document.body.classList.remove('ticket-generation-open');
+    };
     payButton.disabled = true; message.textContent = 'Starting secure checkout…';
     try {
       const orderResponse = await fetch('/api/payment/order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ startStation: payButton.dataset.start, endStation: payButton.dataset.end }) });
@@ -155,13 +167,24 @@ if (payButton) {
         prefill: { name: order.user.name, email: order.user.email },
         theme: { color: '#0057ff' },
         handler: async (payment) => {
-          message.textContent = 'Verifying payment…';
-          const verifyResponse = await fetch('/api/payment/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payment) });
-          const result = await verifyResponse.json();
-          if (!verifyResponse.ok) { payButton.disabled = false; message.textContent = result.error; return; }
-          window.location.href = result.redirectUrl;
+          paymentCompleted = true;
+          message.textContent = 'Payment complete. Generating your ticket…';
+          showGenerationPopup();
+          try {
+            const verifyTicket = () => fetch('/api/payment/verify', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payment) });
+            let verifyResponse;
+            try { verifyResponse = await verifyTicket(); }
+            catch { verifyResponse = await verifyTicket(); }
+            const result = await verifyResponse.json();
+            if (!verifyResponse.ok) throw new Error(result.error || 'Could not generate your ticket.');
+            window.location.assign(result.redirectUrl);
+          } catch (error) {
+            hideGenerationPopup();
+            payButton.disabled = false;
+            message.textContent = error.message || 'Could not generate your ticket. Please try again.';
+          }
         },
-        modal: { ondismiss: () => { payButton.disabled = false; message.textContent = 'Checkout closed. No ticket was issued.'; } }
+        modal: { ondismiss: () => { if (!paymentCompleted) { payButton.disabled = false; message.textContent = 'Checkout closed. No ticket was issued.'; } } }
       });
       checkout.on('payment.failed', response => { payButton.disabled = false; message.textContent = response.error.description || 'Payment failed.'; });
       checkout.open();

@@ -18,4 +18,7 @@ const fareRequestSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
+fareRequestSchema.index({ user: 1, status: 1, paidAt: -1 });
+fareRequestSchema.index({ user: 1, razorpayOrderId: 1, status: 1 });
+
 module.exports = mongoose.model('FareRequest', fareRequestSchema);

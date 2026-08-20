@@ -1,33 +1,59 @@
 <%- include('partials/header') %>
+<% const money = value => Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 }); %>
+<% const maxDailyRevenue = Math.max(...daily.map(day => day.revenue), 1); %>
+<% const totalAttempts = (statusCounts.paid || 0) + (statusCounts.pending || 0) + (statusCounts.failed || 0); %>
+<% const successRate = totalAttempts ? Math.round((statusCounts.paid || 0) / totalAttempts * 100) : 0; %>
 
-<section class="hero compact">
-  <h1>Admin Dashboard</h1>
-  <p>Metro operations overview</p>
-  <div class="dashboard-actions">
-    <a class="plain-btn" href="/admin/history">View Booking History</a>
-    <form class="inline-form" action="/admin/logout" method="POST"><button class="plain-btn secondary" type="submit">Logout</button></form>
-  </div>
+<section class="admin-hero">
+  <div><span class="eyebrow">Operations console</span><h1>Admin Dashboard</h1><p>Live business overview as of <%= now.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) %>.</p></div>
+  <div class="dashboard-actions"><a class="plain-btn secondary" href="/admin/history">All bookings</a><form class="inline-form" action="/admin/logout" method="POST"><button class="plain-btn admin-logout" type="submit">Logout</button></form></div>
 </section>
 
-<section class="stats-grid">
-  <div class="card stat-card">
-    <span>Total Bookings</span>
-    <strong><%= totalBookings %></strong>
-  </div>
-  <div class="card stat-card">
-    <span>Total Revenue</span>
-    <strong>₹<%= totalRevenue %></strong>
-  </div>
+<div class="admin-toolbar">
+  <div><strong>Analytics period</strong><span><%= periodStart.toLocaleDateString('en-IN', { dateStyle: 'medium' }) %> – today</span></div>
+  <nav class="period-tabs" aria-label="Analytics period"><% [7, 30, 90].forEach(days => { %><a class="<%= period === days ? 'active' : '' %>" href="/admin/dashboard?days=<%= days %>"><%= days %> days</a><% }) %></nav>
+</div>
+
+<section class="admin-kpis" aria-label="Key metrics">
+  <article class="admin-kpi primary"><span>Period revenue</span><strong>₹<%= money(selectedPeriod.revenue) %></strong><small><%= selectedPeriod.bookings %> paid bookings</small></article>
+  <article class="admin-kpi"><span>All-time revenue</span><strong>₹<%= money(allTime.revenue) %></strong><small>Average fare ₹<%= money(allTime.averageFare) %></small></article>
+  <article class="admin-kpi"><span>Registered users</span><strong><%= totalUsers.toLocaleString('en-IN') %></strong><small>+<%= newUsers %> in this period</small></article>
+  <article class="admin-kpi"><span>Active tickets</span><strong><%= activeTickets.toLocaleString('en-IN') %></strong><small><%= totalBookings.toLocaleString('en-IN') %> lifetime bookings</small></article>
 </section>
 
-<section class="card">
-  <h3>Recent Bookings</h3>
-  <% if (bookings && bookings.length) { %>
-    <table class="data-table">
-      <thead><tr><th>From</th><th>User</th><th>To</th><th>Amount</th><th>Payment</th><th>Time</th></tr></thead>
-      <tbody><% bookings.forEach(booking => { %><tr><td><%= booking.startStation %></td><td><%= booking.user ? booking.user.email : 'Unknown' %></td><td><%= booking.endStation %></td><td>₹<%= booking.totalPrice %></td><td><%= booking.paymentMethod %></td><td><%= new Date(booking.createdAt).toLocaleString() %></td></tr><% }) %></tbody>
-    </table>
-  <% } else { %><p>No bookings yet.</p><% } %>
+<section class="admin-analytics-grid">
+  <article class="admin-panel revenue-panel">
+    <div class="admin-panel-head"><div><span class="eyebrow">Performance</span><h2>Daily revenue</h2></div><strong>₹<%= money(selectedPeriod.revenue) %></strong></div>
+    <div class="revenue-chart" aria-label="Daily revenue chart"><% daily.forEach((day, index) => { %><div class="chart-column" title="<%= day.label %>: ₹<%= money(day.revenue) %> from <%= day.bookings %> bookings"><span class="chart-value"><%= day.revenue ? `₹${money(day.revenue)}` : '' %></span><i style="height:<%= Math.max(day.revenue / maxDailyRevenue * 100, day.revenue ? 5 : 1) %>%"></i><% if (period <= 30 || index % 7 === 0 || index === daily.length - 1) { %><small><%= day.label %></small><% } %></div><% }) %></div>
+    <% if (!selectedPeriod.bookings) { %><p class="admin-empty">No paid bookings in this period yet. The chart will update automatically after payments.</p><% } %>
+  </article>
+  <article class="admin-panel payment-panel">
+    <div class="admin-panel-head"><div><span class="eyebrow">Payment health</span><h2>Transaction status</h2></div><strong><%= successRate %>%</strong></div>
+    <div class="success-meter"><i style="width:<%= successRate %>%"></i></div>
+    <div class="status-breakdown"><div><i class="paid"></i><span>Paid</span><strong><%= statusCounts.paid || 0 %></strong></div><div><i class="pending"></i><span>Pending</span><strong><%= statusCounts.pending || 0 %></strong></div><div><i class="failed"></i><span>Failed</span><strong><%= statusCounts.failed || 0 %></strong></div></div>
+    <small class="metric-note">Success rate across all payment attempts.</small>
+  </article>
+</section>
+
+<section class="admin-split-grid">
+  <article class="admin-panel">
+    <div class="admin-panel-head"><div><span class="eyebrow">Demand</span><h2>Popular routes</h2></div><small>Last <%= period %> days</small></div>
+    <% if (popularRoutes.length) { %><div class="route-ranking"><% popularRoutes.forEach((route, index) => { %><div><span class="rank"><%= index + 1 %></span><p><strong><%= route._id.from %> → <%= route._id.to %></strong><small>₹<%= money(route.revenue) %> revenue</small></p><b><%= route.bookings %></b></div><% }) %></div><% } else { %><p class="admin-empty">No route data for this period.</p><% } %>
+  </article>
+  <article class="admin-panel">
+    <div class="admin-panel-head"><div><span class="eyebrow">Channels</span><h2>Payment methods</h2></div><small>Last <%= period %> days</small></div>
+    <% if (paymentMethods.length) { %><div class="method-list"><% paymentMethods.forEach(method => { const share = selectedPeriod.bookings ? Math.round(method.count / selectedPeriod.bookings * 100) : 0; %><div><p><strong><%= method._id || 'Unknown' %></strong><small><%= method.count %> payments · ₹<%= money(method.revenue) %></small></p><span><i style="width:<%= share %>%"></i></span><b><%= share %>%</b></div><% }) %></div><% } else { %><p class="admin-empty">No payment data for this period.</p><% } %>
+  </article>
+</section>
+
+<section class="admin-panel admin-table-panel">
+  <div class="admin-panel-head"><div><span class="eyebrow">Latest activity</span><h2>Recent paid bookings</h2></div><a href="/admin/history">View full history →</a></div>
+  <% if (bookings.length) { %><div class="table-scroll"><table class="admin-table"><thead><tr><th>Ticket</th><th>Passenger</th><th>Journey</th><th>Fare</th><th>Distance</th><th>Paid at</th></tr></thead><tbody><% bookings.forEach(booking => { %><tr><td><code>#<%= booking._id.toString().slice(-6).toUpperCase() %></code></td><td><strong><%= booking.user?.name || 'Deleted user' %></strong><small><%= booking.user?.email || 'Unknown' %></small></td><td><strong><%= booking.startStation %></strong><small>to <%= booking.endStation %></small></td><td>₹<%= money(booking.totalPrice) %></td><td><%= booking.distance %> km</td><td><%= new Date(booking.paidAt || booking.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) %></td></tr><% }) %></tbody></table></div><% } else { %><p class="admin-empty">No paid bookings yet.</p><% } %>
+</section>
+
+<section class="admin-panel recent-users-panel">
+  <div class="admin-panel-head"><div><span class="eyebrow">Customers</span><h2>Newest users</h2></div><strong><%= totalUsers %> total</strong></div>
+  <% if (recentUsers.length) { %><div class="recent-users"><% recentUsers.forEach(user => { %><div><span><%= user.name.charAt(0).toUpperCase() %></span><p><strong><%= user.name %></strong><small><%= user.email %></small></p><time><%= new Date(user.createdAt).toLocaleDateString('en-IN', { dateStyle: 'medium' }) %></time></div><% }) %></div><% } else { %><p class="admin-empty">No registered users yet.</p><% } %>
 </section>
 
 <%- include('partials/footer') %>

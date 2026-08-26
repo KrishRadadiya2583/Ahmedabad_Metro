@@ -7,6 +7,7 @@ const PDFDocument = require('pdfkit');
 const mongoose = require('mongoose');
 const { sendTicketEmail } = require('../services/mailer');
 const { normalizeNearbyStations } = require('../services/nearbyStations');
+const metroStationLocations = require('../data/metroStationLocations');
 const User = require('../models/User');
 const FareRequest = require('../models/FareRequest');
 const { requireUser, requireGuest, requireAdmin, requireAdminGuest } = require('../middleware/auth');
@@ -45,18 +46,32 @@ const renderLanding = (res, options = {}) => res.render('index', {
   title: 'Welcome', authError: null, authMode: 'login', values: {}, routeLines: lines, ...options
 });
 
+const overpassEndpoints = [
+  process.env.OVERPASS_API_URL,
+  'https://overpass.private.coffee/api/interpreter',
+  'https://overpass-api.de/api/interpreter'
+].filter(Boolean);
+
 const fetchOverpass = async query => {
-  const response = await fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-      'User-Agent': 'AhmedabadMetroWebApp/1.0'
-    },
-    body: new URLSearchParams({ data: query }),
-    signal: AbortSignal.timeout(25000)
-  });
-  if (!response.ok) throw new Error(`Overpass returned HTTP ${response.status}`);
-  return response.json();
+  const failures = [];
+  for (const endpoint of overpassEndpoints) {
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          'User-Agent': 'AhmedabadMetroWebApp/1.0'
+        },
+        body: new URLSearchParams({ data: query }),
+        signal: AbortSignal.timeout(15000)
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      failures.push(`${new URL(endpoint).hostname}: ${error.cause?.code || error.message}`);
+    }
+  }
+  throw new Error(`All Overpass services failed (${failures.join('; ')})`);
 };
 
 router.get('/', (req, res) => req.session?.userId ? res.redirect('/dashboard') : renderLanding(res));
@@ -88,20 +103,8 @@ router.get('/api/nearby-stations', requireUser, async (req, res) => {
   if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
     return res.status(400).json({ error: 'Valid latitude and longitude are required.' });
   }
-  try {
-    const query = `[out:json][timeout:20];(
-      nwr(around:15000,${latitude},${longitude})[railway="station"][station~"subway|light_rail"];
-      nwr(around:15000,${latitude},${longitude})[public_transport="station"][network~"Ahmedabad Metro|Gujarat Metro|GMRC",i];
-      nwr(around:15000,${latitude},${longitude})[railway~"station|halt"][operator~"Gujarat Metro|GMRC",i];
-    );out center tags;`;
-    const data = await fetchOverpass(query);
-    const stations = normalizeNearbyStations(data.elements, latitude, longitude);
-    if (!stations.length) return res.status(404).json({ error: 'No Ahmedabad Metro station was found within 15 km of this location.' });
-    res.json({ origin: { latitude, longitude }, stations });
-  } catch (error) {
-    console.error('Nearby station lookup failed:', error.message);
-    res.status(502).json({ error: 'Station service is temporarily unavailable.' });
-  }
+  const stations = normalizeNearbyStations(metroStationLocations, latitude, longitude);
+  res.json({ origin: { latitude, longitude }, stations });
 });
 router.get('/api/metro-map', requireUser, async (req, res) => {
   const bounds = '22.95,72.43,23.35,72.78';

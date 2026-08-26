@@ -10,14 +10,6 @@
   }).addTo(map);
 
   const networkLayer = L.featureGroup().addTo(map);
-  const bounds = '22.95,72.43,23.35,72.78';
-  const query = `[out:json][timeout:30];(
-    relation["route"~"subway|light_rail"](${bounds});
-    way["railway"~"subway|light_rail"](${bounds});
-    node["railway"="station"]["station"~"subway|light_rail"](${bounds});
-    node["railway"~"station|halt"]["network"~"Ahmedabad|Gujarat Metro|GMRC",i](${bounds});
-  );out body geom;`;
-
   const lineColor = tags => {
     const text = `${tags?.name || ''} ${tags?.ref || ''}`.toLowerCase();
     if (text.includes('east') || text.includes('blue')) return '#1558d6';
@@ -33,9 +25,9 @@
     if (points.length > 1) L.polyline(points, { color: lineColor(tags), weight: 6, opacity: .88, lineCap: 'round' }).bindPopup(`<strong>${tags.name || 'Ahmedabad Metro track'}</strong>`).addTo(networkLayer);
   };
 
-  fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`)
+  fetch('/api/metro-map')
     .then(response => {
-      if (!response.ok) throw new Error('Map data service is temporarily unavailable.');
+      if (!response.ok) return response.json().catch(() => ({})).then(result => { throw new Error(result.error || 'Map data service is temporarily unavailable.'); });
       return response.json();
     })
     .then(data => {

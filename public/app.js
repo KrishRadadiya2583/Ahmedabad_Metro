@@ -33,28 +33,32 @@ document.addEventListener('DOMContentLoaded', () => {
     navigator.geolocation.getCurrentPosition(async position => {
       const { latitude, longitude } = position.coords;
       try {
-        const query = `[out:json][timeout:20];nwr(around:15000,${latitude},${longitude})[railway=station];out center tags;`;
-        const response = await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error('Station service is temporarily unavailable.');
+        const response = await fetch(`/api/nearby-stations?lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`);
+        if (!response.ok) {
+          const result = await response.json().catch(() => ({}));
+          throw new Error(result.error || 'Station service is temporarily unavailable.');
+        }
         const data = await response.json();
-        const distance = (lat, lon) => {
-          const rad = value => value * Math.PI / 180, earth = 6371;
-          const dLat = rad(lat - latitude), dLon = rad(lon - longitude);
-          const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(latitude)) * Math.cos(rad(lat)) * Math.sin(dLon / 2) ** 2;
-          return earth * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const escapeHtml = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]));
+        const directionsUrl = station => {
+          const parameters = new URLSearchParams({
+            api: '1',
+            destination: `${station.latitude},${station.longitude}`,
+            travelmode: 'walking',
+            dir_action: 'navigate'
+          });
+          // Let Maps resolve the device's location when the link is opened. Passing
+          // the earlier browser fix as the origin can produce a route from a stale or
+          // low-accuracy point, especially after switching to the Maps app.
+          return `https://www.google.com/maps/dir/?${parameters}`;
         };
-        const stations = data.elements.map(item => ({ name: item.tags?.name || item.tags?.['name:en'], lat: item.lat || item.center?.lat, lon: item.lon || item.center?.lon, tags: item.tags || {} }))
-          .filter(item => item.name && item.lat && item.lon)
-          .map(item => ({ ...item, distance: distance(item.lat, item.lon), metro: /metro|gmrc/i.test(`${item.name} ${item.tags.network || ''} ${item.tags.operator || ''}`) || /subway|light_rail/.test(item.tags.station || '') }))
-          .sort((a, b) => Number(b.metro) - Number(a.metro) || a.distance - b.distance).slice(0, 5);
-        if (!stations.length) throw new Error('No rail or metro station was found within 15 km.');
-        results.innerHTML = `<div class="nearest-heading"><div><span class="eyebrow">Near you</span><h2>Closest stations</h2></div><small>Approximate straight-line distance</small></div><div class="nearby-list">${stations.map((station, index) => `<article class="nearby-station"><span class="station-rank">${index + 1}</span><div><strong>${station.name.replace(/[&<>"']/g, '')}</strong><small>${station.metro ? 'Metro station' : 'Rail station'} · ${station.distance.toFixed(1)} km away</small></div><a href="https://www.google.com/maps/dir/?api=1&origin=${latitude},${longitude}&destination=${station.lat},${station.lon}&travelmode=walking" target="_blank" rel="noopener">Directions</a></article>`).join('')}</div>`;
+        results.innerHTML = `<div class="nearest-heading"><div><span class="eyebrow">Near you</span><h2>Closest Ahmedabad Metro stations</h2></div><small>Sorted by straight-line distance</small></div><div class="nearby-list">${data.stations.map((station, index) => `<article class="nearby-station"><span class="station-rank">${index + 1}</span><div><strong>${escapeHtml(station.name)}</strong><small>${escapeHtml(station.location)} · ${station.distanceKm.toFixed(2)} km away</small><small>${station.latitude.toFixed(6)}, ${station.longitude.toFixed(6)}</small></div><a href="${escapeHtml(directionsUrl(station))}" target="_blank" rel="noopener">Directions from current location</a></article>`).join('')}</div>`;
       } catch (error) { results.innerHTML = `<div class="alert error">${error.message}</div>`; }
       finally { nearestButton.disabled = false; nearestButton.textContent = 'Refresh my location'; }
     }, error => {
       results.innerHTML = `<div class="alert error">${error.code === 1 ? 'Location permission was denied. Enable it in browser settings and try again.' : 'Your location could not be determined.'}</div>`;
       nearestButton.disabled = false; nearestButton.textContent = 'Try again';
-    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   });
   const revealItems = document.querySelectorAll('.card, .profile-stat, .route-card, .ticket-row');
   if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {

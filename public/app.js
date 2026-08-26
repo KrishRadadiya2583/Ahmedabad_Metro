@@ -31,9 +31,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!navigator.geolocation) { results.innerHTML = '<div class="alert error">Location is not supported by this browser.</div>'; return; }
     nearestButton.disabled = true; nearestButton.textContent = 'Finding stations…';
     navigator.geolocation.getCurrentPosition(async position => {
-      const { latitude, longitude } = position.coords;
+      const { latitude, longitude, accuracy } = position.coords;
       try {
-        const response = await fetch(`/api/nearby-stations?lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`);
+        const response = await fetch(`/api/nearby-stations?lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`, {
+          cache: 'no-store',
+          headers: { Accept: 'application/json' }
+        });
         if (!response.ok) {
           const result = await response.json().catch(() => ({}));
           throw new Error(result.error || 'Station service is temporarily unavailable.');
@@ -52,7 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
           // low-accuracy point, especially after switching to the Maps app.
           return `https://www.google.com/maps/dir/?${parameters}`;
         };
-        results.innerHTML = `<div class="nearest-heading"><div><span class="eyebrow">Near you</span><h2>Closest Ahmedabad Metro stations</h2></div><small>Sorted by straight-line distance</small></div><div class="nearby-list">${data.stations.map((station, index) => `<article class="nearby-station"><span class="station-rank">${index + 1}</span><div><strong>${escapeHtml(station.name)}</strong><small>${escapeHtml(station.location)} · ${station.distanceKm.toFixed(2)} km away</small><small>${station.latitude.toFixed(6)}, ${station.longitude.toFixed(6)}</small></div><a href="${escapeHtml(directionsUrl(station))}" target="_blank" rel="noopener">Directions from current location</a></article>`).join('')}</div>`;
+        const accuracyText = Number.isFinite(accuracy) ? ` · GPS accuracy ±${Math.round(accuracy)} m` : '';
+        results.innerHTML = `<div class="nearest-heading"><div><span class="eyebrow">Near you</span><h2>Closest Ahmedabad Metro stations</h2></div><small>From ${latitude.toFixed(5)}, ${longitude.toFixed(5)}${accuracyText}</small></div><div class="nearby-list">${data.stations.map((station, index) => `<article class="nearby-station"><span class="station-rank">${index + 1}</span><div><strong>${escapeHtml(station.name)}</strong><small>${escapeHtml(station.location)} · ${station.distanceKm.toFixed(2)} km away</small><small>${station.latitude.toFixed(6)}, ${station.longitude.toFixed(6)}</small></div><a href="${escapeHtml(directionsUrl(station))}" target="_blank" rel="noopener">Directions from current location</a></article>`).join('')}</div>`;
       } catch (error) { results.innerHTML = `<div class="alert error">${error.message}</div>`; }
       finally { nearestButton.disabled = false; nearestButton.textContent = 'Refresh my location'; }
     }, error => {

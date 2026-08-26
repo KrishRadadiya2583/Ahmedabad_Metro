@@ -104,6 +104,7 @@ router.get('/api/nearby-stations', requireUser, async (req, res) => {
     return res.status(400).json({ error: 'Valid latitude and longitude are required.' });
   }
   const stations = normalizeNearbyStations(metroStationLocations, latitude, longitude);
+  res.set('Cache-Control', 'no-store, max-age=0');
   res.json({ origin: { latitude, longitude }, stations });
 });
 router.get('/api/metro-map', requireUser, async (req, res) => {

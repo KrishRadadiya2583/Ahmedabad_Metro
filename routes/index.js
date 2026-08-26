@@ -6,6 +6,7 @@ const QRCode = require('qrcode');
 const PDFDocument = require('pdfkit');
 const mongoose = require('mongoose');
 const { sendTicketEmail } = require('../services/mailer');
+const { normalizeNearbyStations } = require('../services/nearbyStations');
 const User = require('../models/User');
 const FareRequest = require('../models/FareRequest');
 const { requireUser, requireGuest, requireAdmin, requireAdminGuest } = require('../middleware/auth');
@@ -44,6 +45,20 @@ const renderLanding = (res, options = {}) => res.render('index', {
   title: 'Welcome', authError: null, authMode: 'login', values: {}, routeLines: lines, ...options
 });
 
+const fetchOverpass = async query => {
+  const response = await fetch('https://overpass-api.de/api/interpreter', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      'User-Agent': 'AhmedabadMetroWebApp/1.0'
+    },
+    body: new URLSearchParams({ data: query }),
+    signal: AbortSignal.timeout(25000)
+  });
+  if (!response.ok) throw new Error(`Overpass returned HTTP ${response.status}`);
+  return response.json();
+};
+
 router.get('/', (req, res) => req.session?.userId ? res.redirect('/dashboard') : renderLanding(res));
 router.get('/privacy', (req, res) => res.render('privacy', { title: 'Privacy Policy' }));
 router.get('/contact', (req, res) => res.render('contact', { title: 'Contact Us' }));
@@ -67,6 +82,42 @@ router.get('/news', requireUser, (req, res) => res.render('news', {
   ]
 }));
 router.get('/nearest-station', requireUser, (req, res) => res.render('nearest-station', { title: 'Nearest Station' }));
+router.get('/api/nearby-stations', requireUser, async (req, res) => {
+  const latitude = Number(req.query.lat);
+  const longitude = Number(req.query.lon);
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
+    return res.status(400).json({ error: 'Valid latitude and longitude are required.' });
+  }
+  try {
+    const query = `[out:json][timeout:20];(
+      nwr(around:15000,${latitude},${longitude})[railway="station"][station~"subway|light_rail"];
+      nwr(around:15000,${latitude},${longitude})[public_transport="station"][network~"Ahmedabad Metro|Gujarat Metro|GMRC",i];
+      nwr(around:15000,${latitude},${longitude})[railway~"station|halt"][operator~"Gujarat Metro|GMRC",i];
+    );out center tags;`;
+    const data = await fetchOverpass(query);
+    const stations = normalizeNearbyStations(data.elements, latitude, longitude);
+    if (!stations.length) return res.status(404).json({ error: 'No Ahmedabad Metro station was found within 15 km of this location.' });
+    res.json({ origin: { latitude, longitude }, stations });
+  } catch (error) {
+    console.error('Nearby station lookup failed:', error.message);
+    res.status(502).json({ error: 'Station service is temporarily unavailable.' });
+  }
+});
+router.get('/api/metro-map', requireUser, async (req, res) => {
+  const bounds = '22.95,72.43,23.35,72.78';
+  const query = `[out:json][timeout:30];(
+    relation["route"~"subway|light_rail"](${bounds});
+    way["railway"~"subway|light_rail"](${bounds});
+    node["railway"="station"]["station"~"subway|light_rail"](${bounds});
+    node["railway"~"station|halt"]["network"~"Ahmedabad|Gujarat Metro|GMRC",i](${bounds});
+  );out body geom;`;
+  try {
+    res.json(await fetchOverpass(query));
+  } catch (error) {
+    console.error('Metro map lookup failed:', error.message);
+    res.status(502).json({ error: 'Map data service is temporarily unavailable.' });
+  }
+});
 router.get('/timetable', requireUser, (req, res) => res.render('timetable', {
   title: 'Metro Timetable',
   timetable: [

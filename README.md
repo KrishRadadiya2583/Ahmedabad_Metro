@@ -22,6 +22,44 @@ A responsive Node.js and Express application for planning Ahmedabad Metro journe
 - Nodemailer
 - PDFKit and QRCode
 
+## Project structure
+
+```text
+app.js                 Express application composition
+server.js              Database, HTTP server, and shutdown lifecycle
+config/                Environment, database, and session configuration
+controllers/           HTTP handlers grouped by application feature
+data/                  Metro network and station reference data
+middleware/            Authentication, security, locals, and error handling
+models/                 Mongoose schemas and models
+routes/                 Feature routers composed by routes/index.js
+services/               External integrations and domain services
+utils/                  Small stateless formatting helpers
+public/                 Browser JavaScript, styles, and static media
+views/                  EJS pages and reusable partials
+```
+
+Keep URL and middleware declarations in routes, request handlers in controllers,
+reusable business logic in services, persistence definitions in models, and process
+startup in `server.js`.
+
+The route layer is separated by responsibility:
+
+```text
+routes/index.js         Single route aggregator used by app.js
+routes/pages.js         Public pages and passenger information
+routes/auth.js          Registration, login, and logout
+routes/profile.js       Passenger profile
+routes/tickets.js       Fare calculation and ticket views
+routes/admin.js         Administrator authentication and reporting
+routes/api.js           Map, station, and payment API endpoints
+```
+
+Each feature router delegates to its matching controller (for example,
+`routes/tickets.js` delegates to `controllers/ticketsController.js`). Shared login
+throttling lives in middleware, while payment, email delivery, and external map
+access live in services.
+
 ## Local setup
 
 1. Install Node.js 20 or newer and MongoDB.

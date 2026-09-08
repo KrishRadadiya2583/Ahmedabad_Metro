@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check": "node --check server.js && node --check routes/index.js && node --check services/nearbyStations.js && node --check public/app.js && node --check config/env.js"
+    "check": "node scripts/check-syntax.js"
   },
   "keywords": [
     "ahmedabad",
